@@ -10,66 +10,48 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 type mongoRepository struct {
-	client *mongo.Client
+	client  *mongo.Client
+	db      string
+	timeout time.Duration
+}
+
+//Create a Mongo Client
+func newMongClient(mongoServerURL string, timeout int) (*mongo.Client, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoServerURL))
+	if err != nil {
+		return nil, err
+	}
+	//We could ping the server to test connectivity if we want
+
+	return client, nil
 }
 
 //NewMongoRepository ...
-func NewMongoRepository(mongoURL string) (product.ProductRepository, error) {
-
-	timeout := 10 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	//conect client
-
-	c, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
+func NewMongoRepository(mongoServerURL, mongoDb string, timeout int) (product.ProductRepository, error) {
+	mongoClient, err := newMongClient(mongoServerURL, timeout)
+	repo := &mongoRepository{
+		client:  mongoClient,
+		db:      mongoDb,
+		timeout: time.Duration(timeout) * time.Second,
+	}
 	if err != nil {
-
-		return nil, errors.Wrap(err, "repository.NewMongoRepo")
-
+		return nil, errors.Wrap(err, "client error")
 	}
 
-	err = c.Ping(ctx, readpref.Primary())
-
-	if err != nil {
-
-		log.Fatal(err)
-	}
-
-	repo := &mongoRepository{}
-	repo.client = c
 	return repo, nil
 
 }
 
-func (r *mongoRepository) Find(code string) (*product.Product, error) {
-
-	timeout := 10 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	prod := &product.Product{}
-	collection := r.client.Database("product").Collection("items")
-	filter := bson.M{"code": code}
-	err := collection.FindOne(ctx, filter).Decode(&prod)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, errors.New("repository.Product.Find")
-		}
-		return nil, errors.Wrap(err, "repository.Product.Find")
-	}
-	return prod, nil
-
-}
 func (r *mongoRepository) Store(product *product.Product) error {
-	timeout := 10 * time.Second
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
-	collection := r.client.Database("product").Collection("items")
+	collection := r.client.Database(r.db).Collection("items")
 	_, err := collection.InsertOne(
 		ctx,
 		bson.M{
@@ -79,9 +61,27 @@ func (r *mongoRepository) Store(product *product.Product) error {
 		},
 	)
 	if err != nil {
-		return errors.Wrap(err, "repository.Product.Store")
+		return errors.Wrap(err, "Error writing to repository")
 	}
 	return nil
+
+}
+
+func (r *mongoRepository) Find(code string) (*product.Product, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	defer cancel()
+	prod := &product.Product{}
+	collection := r.client.Database(r.db).Collection("items")
+	filter := bson.M{"code": code}
+	err := collection.FindOne(ctx, filter).Decode(&prod)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.New("Error Finding a catalogue item")
+		}
+		return nil, errors.Wrap(err, "repository research")
+	}
+	return prod, nil
 
 }
 
@@ -89,7 +89,7 @@ func (r *mongoRepository) FindAll() ([]*product.Product, error) {
 
 	var items []*product.Product
 
-	collection := r.client.Database("product").Collection("items")
+	collection := r.client.Database(r.db).Collection("items")
 	cur, err := collection.Find(context.Background(), bson.D{})
 
 	if err != nil {
@@ -110,13 +110,12 @@ func (r *mongoRepository) FindAll() ([]*product.Product, error) {
 }
 func (r *mongoRepository) Delete(code string) error {
 
-	timeout := 10 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 	filter := bson.M{"code": code}
 
-	coll := r.client.Database("product").Collection("items")
-	_, err := coll.DeleteOne(ctx, filter)
+	collection := r.client.Database(r.db).Collection("items")
+	_, err := collection.DeleteOne(ctx, filter)
 
 	if err != nil {
 		return err
