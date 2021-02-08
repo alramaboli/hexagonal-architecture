@@ -1,4 +1,4 @@
-package product
+package domain
 
 //Service ...
 type Service interface {
@@ -9,7 +9,7 @@ type Service interface {
 }
 
 //Repository ...
-type ProductRepository interface {
+type Repository interface {
 	Find(code string) (*Product, error)
 	Store(product *Product) error
 	FindAll() ([]*Product, error)
@@ -17,11 +17,11 @@ type ProductRepository interface {
 }
 
 type service struct {
-	productrepo ProductRepository
+	productrepo Repository
 }
 
 //NewProductService ...
-func NewProductService(productrepo ProductRepository) Service {
+func NewProductService(productrepo Repository) Service {
 
 	return &service{productrepo: productrepo}
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/projects/mongodb/product"
+	"github.com/projects/hexagonal-architecture/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -32,7 +32,7 @@ func newMongClient(mongoServerURL string, timeout int) (*mongo.Client, error) {
 }
 
 //NewMongoRepository ...
-func NewMongoRepository(mongoServerURL, mongoDb string, timeout int) (product.ProductRepository, error) {
+func NewMongoRepository(mongoServerURL, mongoDb string, timeout int) (domain.Repository, error) {
 	mongoClient, err := newMongClient(mongoServerURL, timeout)
 	repo := &mongoRepository{
 		client:  mongoClient,
@@ -47,7 +47,7 @@ func NewMongoRepository(mongoServerURL, mongoDb string, timeout int) (product.Pr
 
 }
 
-func (r *mongoRepository) Store(product *product.Product) error {
+func (r *mongoRepository) Store(product *domain.Product) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
@@ -67,11 +67,11 @@ func (r *mongoRepository) Store(product *product.Product) error {
 
 }
 
-func (r *mongoRepository) Find(code string) (*product.Product, error) {
+func (r *mongoRepository) Find(code string) (*domain.Product, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
-	prod := &product.Product{}
+	prod := &domain.Product{}
 	collection := r.client.Database(r.db).Collection("items")
 	filter := bson.M{"code": code}
 	err := collection.FindOne(ctx, filter).Decode(&prod)
@@ -85,9 +85,9 @@ func (r *mongoRepository) Find(code string) (*product.Product, error) {
 
 }
 
-func (r *mongoRepository) FindAll() ([]*product.Product, error) {
+func (r *mongoRepository) FindAll() ([]*domain.Product, error) {
 
-	var items []*product.Product
+	var items []*domain.Product
 
 	collection := r.client.Database(r.db).Collection("items")
 	cur, err := collection.Find(context.Background(), bson.D{})
@@ -98,7 +98,7 @@ func (r *mongoRepository) FindAll() ([]*product.Product, error) {
 	defer cur.Close(context.Background())
 	for cur.Next(context.TODO()) {
 
-		var item product.Product
+		var item domain.Product
 		if err := cur.Decode(&item); err != nil {
 			log.Fatal(err)
 			return nil, err

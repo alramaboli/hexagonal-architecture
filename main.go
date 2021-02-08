@@ -6,18 +6,20 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/projects/mongodb/api"
-	"github.com/projects/mongodb/product"
-	"github.com/projects/mongodb/repository"
+	"github.com/projects/hexagonal-architecture/api"
+	"github.com/projects/hexagonal-architecture/domain"
+	"github.com/projects/hexagonal-architecture/repository"
 )
 
 func main() {
 
 	mongoURL := "mongodb://localhost:27017"
-	repo, _ := repository.NewMongoRepository(mongoURL)
-	service := product.NewProductService(repo)
+	mongodb := "product"
+	timeout := 5
+	repo, _ := repository.NewMongoRepository(mongoURL, mongodb, timeout)
+	service := domain.NewProductService(repo)
 	handler := api.NewHandler(service)
-	
+
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
