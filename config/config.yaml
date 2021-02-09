@@ -1,0 +1,11 @@
+
+# Database settings
+database:
+  url: "mongodb://localhost:27017"
+  db: "product"
+  timeout: 5
+
+# Server settings
+server:
+  host: "localhost"
+  port: ":8082"
