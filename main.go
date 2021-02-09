@@ -31,6 +31,5 @@ func main() {
 	r.Delete("/products/{code}", handler.Delete)
 	r.Get("/products", handler.GetAll)
 	log.Fatal(http.ListenAndServe(":8082", r))
-	//database()
 
 }

@@ -6,23 +6,15 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/projects/mongodb/product"
+	"github.com/projects/hexagonal-architecture/domain"
 )
 
-//ProductHandler ...
-type ProductHandler interface {
-	Get(http.ResponseWriter, *http.Request)
-	Post(http.ResponseWriter, *http.Request)
-	Delete(http.ResponseWriter, *http.Request)
-	GetAll(http.ResponseWriter, *http.Request)
-}
-
 type handler struct {
-	productService product.Service
+	productService domain.Service
 }
 
 //NewHandler ...
-func NewHandler(productService product.Service) ProductHandler {
+func NewHandler(productService domain.Service) ProductHandler {
 
 	return &handler{productService: productService}
 
@@ -47,7 +39,7 @@ func (h *handler) Post(w http.ResponseWriter, r *http.Request) {
 	//requestBody, err := ioutil.ReadAll(r.Body)
 	w.Header().Set("Content-Type", "application/json")
 
-	p := &product.Product{}
+	p := &domain.Product{}
 	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

@@ -1,4 +1,4 @@
-package product
+package domain
 
 //Product ...
 type Product struct {

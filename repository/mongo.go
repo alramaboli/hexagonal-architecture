@@ -71,17 +71,17 @@ func (r *mongoRepository) Find(code string) (*domain.Product, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
-	prod := &domain.Product{}
+	product := &domain.Product{}
 	collection := r.client.Database(r.db).Collection("items")
 	filter := bson.M{"code": code}
-	err := collection.FindOne(ctx, filter).Decode(&prod)
+	err := collection.FindOne(ctx, filter).Decode(&product)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, errors.New("Error Finding a catalogue item")
 		}
 		return nil, errors.Wrap(err, "repository research")
 	}
-	return prod, nil
+	return product, nil
 
 }
 
