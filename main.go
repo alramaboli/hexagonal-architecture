@@ -14,11 +14,6 @@ import (
 
 func main() {
 
-	/*
-		mongoURL := "mongodb://localhost:27017"
-		mongodb := "product"
-		timeout := 5
-	*/
 	conf, _ := config.NewConfig("./config/config.yaml")
 	repo, _ := repository.NewMongoRepository(conf.Database.URL, conf.Database.DB, conf.Database.Timeout)
 	service := domain.NewProductService(repo)
@@ -34,6 +29,7 @@ func main() {
 	r.Post("/products", handler.Post)
 	r.Delete("/products/{code}", handler.Delete)
 	r.Get("/products", handler.GetAll)
+	r.Put("/products", handler.Put)
 	log.Fatal(http.ListenAndServe(conf.Server.Port, r))
 
 }

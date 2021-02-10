@@ -66,6 +66,22 @@ func (r *mongoRepository) Store(product *domain.Product) error {
 	return nil
 
 }
+func (r *mongoRepository) Update(product *domain.Product) error {
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	defer cancel()
+	collection := r.client.Database(r.db).Collection("items")
+	_, err := collection.UpdateOne(
+		ctx,
+		bson.M{"code": product.Code},
+		bson.D{
+			{"$set", bson.D{{"name", product.Name}, {"price", product.Price}}},
+		},
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func (r *mongoRepository) Find(code string) (*domain.Product, error) {
 
@@ -74,7 +90,7 @@ func (r *mongoRepository) Find(code string) (*domain.Product, error) {
 	product := &domain.Product{}
 	collection := r.client.Database(r.db).Collection("items")
 	filter := bson.M{"code": code}
-	err := collection.FindOne(ctx, filter).Decode(&product)
+	err := collection.FindOne(ctx, filter).Decode(product)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, errors.New("Error Finding a catalogue item")

@@ -55,6 +55,24 @@ func (h *handler) Post(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&p)
 
 }
+func (h *handler) Put(w http.ResponseWriter, r *http.Request) {
+	p := &domain.Product{}
+	err := json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.productService.Update(p)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(&p)
+
+}
+
 func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
